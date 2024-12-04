@@ -1,8 +1,0 @@
-services:
-  - type: web
-    name: oauth-backend
-    env: node
-    plan: free
-    buildCommand: npm install && npm run build
-    startCommand: node dist/main
-    region: singapore

@@ -132,7 +132,8 @@ export class AuthService {
       const newAccessToken = this.jwtService.sign({ email: payload.email, sub: payload.sub }, { expiresIn: '1h' });
 
       return { access_token: newAccessToken };
-    } catch (e) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }
