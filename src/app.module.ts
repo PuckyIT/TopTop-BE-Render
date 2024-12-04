@@ -5,16 +5,19 @@ import { CloudinaryModule } from './configs/cloudinary';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { MongooseModule } from '@nestjs/mongoose';
-import { MulterModule } from './configs/multer/multer.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { MulterModule } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 
 @Module({
   imports: [
     UsersModule,
     AuthModule,
     CloudinaryModule,
-    MulterModule,
+    MulterModule.register({
+      storage: memoryStorage(),
+    }),
     ConfigModule.forRoot({ isGlobal: true }),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
