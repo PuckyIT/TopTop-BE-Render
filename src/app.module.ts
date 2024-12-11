@@ -10,11 +10,14 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { Reflector } from '@nestjs/core';
+import { VideosModule } from './videos/videos.module';
 
 @Module({
   imports: [
     UsersModule,
     AuthModule,
+    VideosModule,
     CloudinaryModule,
     MulterModule.register({
       storage: memoryStorage(),
@@ -44,6 +47,6 @@ import { memoryStorage } from 'multer';
     }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, Reflector],
 })
 export class AppModule { }

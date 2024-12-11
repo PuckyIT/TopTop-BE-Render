@@ -49,6 +49,11 @@ export class User {
   @Prop({ default: 0 })
   likesCount: number;
 
+  @Prop({ type: [{ type: String }], default: [] })
+  followers: string[];
+
+  @Prop({ type: [{ type: String }], default: [] })
+  following: string[];
 
   constructor(user: Partial<User>) {
     this._id = user._id ? user._id.toString() : undefined;

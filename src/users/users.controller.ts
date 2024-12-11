@@ -1,23 +1,19 @@
 /* eslint-disable prettier/prettier */
 // user/user.controller.ts
 
-import { Controller, Get, Body, Param, Delete, UseGuards, Put, Req, ForbiddenException, UseInterceptors, UploadedFile, Post, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Body, Param, Delete, UseGuards, Put, Req, ForbiddenException, UseInterceptors, UploadedFile, Post, BadRequestException, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from '../users/dto/update-user.dto';
 import { JwtAuthGuard } from '../jwt/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateVideoDto } from './dto/upload-video.dto';
+import { Public } from '../decorators/public.decorator';
 
 @Controller('users')
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
   ) { }
-
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
-  }
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
@@ -57,5 +53,57 @@ export class UsersController {
       throw new BadRequestException('Video file is required');
     }
     return this.usersService.uploadVideo(createVideoDto, videoFile);
+  }
+
+  @Get(':userId/videos')
+  @UseGuards(JwtAuthGuard)
+  async getUserVideos(@Param('userId') userId: string) {
+    return this.usersService.getUserVideos(userId);
+  }
+
+  @Get(':userId/followers')
+  @UseGuards(JwtAuthGuard)
+  async getFollowers(@Param('userId') userId: string) {
+    return this.usersService.getFollowers(userId);
+  }
+
+  @Get(':userId/following')
+  @UseGuards(JwtAuthGuard)
+  async getFollowing(@Param('userId') userId: string) {
+    return this.usersService.getFollowing(userId);
+  }
+
+  @Post(':targetUserId/follow')
+  @UseGuards(JwtAuthGuard)
+  async followUser(
+    @Req() req,
+    @Param('targetUserId') targetUserId: string
+  ) {
+    return this.usersService.followUser(req.user._id.toString(), targetUserId)
+  }
+
+  @Post(':targetUserId/unfollow')
+  @UseGuards(JwtAuthGuard)
+  async unfollowUser(
+    @Req() req,
+    @Param('targetUserId') targetUserId: string
+  ) {
+    return this.usersService.unfollowUser(req.user._id, targetUserId);
+  }
+
+  @Public()
+  @Get('public/videos')
+  async getPublicVideos(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10
+  ) {
+    return this.usersService.getPublicVideos(page, limit);
+  }  
+
+  @Public()
+  @Get('all')
+  async getAllVideos() {
+    const videos = await this.usersService.getAllVideos();
+    return { videos };
   }
 }

@@ -7,6 +7,9 @@ export type VideoDocument = Video & Document;
 
 @Schema({ timestamps: true })
 export class Video {
+  @Prop({ type: Types.ObjectId })
+  _id: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
@@ -25,14 +28,45 @@ export class Video {
   @Prop({ default: 0 })
   likes: number;
 
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  likedBy: Types.ObjectId[];
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  savedBy: Types.ObjectId[];
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  sharedBy: Types.ObjectId[];
+
+  @Prop({
+    type: [{
+      _id: { type: Types.ObjectId },
+      userId: { type: Types.ObjectId, ref: 'User' },
+      content: String,
+      createdAt: { type: Date, default: Date.now }
+    }], default: []
+  })
+  comments: Array<{ _id: Types.ObjectId; userId: Types.ObjectId; content: string; createdAt: Date }>;
+
   @Prop({ default: 0 })
   views: number;
+
+  @Prop({ default: 0 })
+  commentCount: number;
+
+  @Prop({ default: 0 })
+  saved: number;
+
+  @Prop({ default: 0 })
+  shared: number;
 
   @Prop({ default: Date.now })
   createdAt: Date;
 
   @Prop({ default: Date.now })
   updatedAt: Date;
+
+  @Prop({ default: true })
+  isPublic: boolean;
 }
 
 export const VideoSchema = SchemaFactory.createForClass(Video);

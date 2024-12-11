@@ -15,13 +15,14 @@ export class UpdateUserDto {
   @IsOptional()
   @IsUrl({}, { message: 'Avatar must be a valid URL' })
   avatar?: string; 
-  @IsOptional()
-  @IsInt()
-  followersCount?: number;
 
   @IsOptional()
   @IsInt()
-  followingCount?: number;
+  followers?: number;
+
+  @IsOptional()
+  @IsInt()
+  following?: number;
 
   @IsOptional()
   @IsInt()
