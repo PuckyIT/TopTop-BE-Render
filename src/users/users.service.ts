@@ -228,7 +228,7 @@ export class UsersService {
       commentCount: video.commentCount,
       saved: video.saved,
       shared: video.shared,
-      likeBy: video.likedBy,
+      likedBy: video.likedBy,
       savedBy: video.savedBy,
       user: {
         id: video.userId._id,

@@ -28,14 +28,14 @@ export class VideosService {
   async likeVideo(_id: string, userId: string): Promise<Video> {
     try {
       const videoObjectId = new Types.ObjectId(_id);
+      const userObjectId = new Types.ObjectId(userId);
+
       const video = await this.videoModel.findById(videoObjectId);
       if (!video) {
         throw new NotFoundException('Video not found');
       }
 
-      // Check if user already liked the video
-      const userObjectId = new Types.ObjectId(userId);
-      const hasLiked = video.likedBy.some(id => id.toString() === userId);
+      const hasLiked = video.likedBy.some(id => id.toString() === userObjectId.toString());
 
       if (hasLiked) {
         throw new ForbiddenException('You have already liked this video');
@@ -46,7 +46,7 @@ export class VideosService {
       return video.save();
     } catch (error) {
       if (error instanceof Error && error.name === 'BSONError') {
-        throw new NotFoundException('Invalid video ID format');
+        throw new NotFoundException('Invalid ID format');
       }
       throw error;
     }
@@ -73,24 +73,41 @@ export class VideosService {
   }
 
   async addComment(_id: string, userId: string, content: string): Promise<Video> {
+    // Kiểm tra và chuyển đổi _id sang ObjectId
+    if (!Types.ObjectId.isValid(_id)) {
+      throw new NotFoundException('Invalid video ID format');
+    }
     const videoObjectId = new Types.ObjectId(_id);
+
+    // Kiểm tra video có tồn tại không
     const video = await this.videoModel.findById(videoObjectId);
     if (!video) {
       throw new NotFoundException('Video not found');
     }
 
+    // Kiểm tra và chuyển đổi userId sang ObjectId
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new NotFoundException('Invalid user ID format');
+    }
+    const userObjectId = new Types.ObjectId(userId);
+
+    // Tạo comment
     const comment = {
-      _id: new Types.ObjectId(),
-      videoId: video,
-      userId: new Types.ObjectId(userId),
+      _id: new Types.ObjectId(), // Tạo ObjectId mới cho comment
+      videoId: videoObjectId,
+      userId: userObjectId, // Gán ObjectId cho userId
       content,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
+    // Thêm comment vào video
     video.comments.push(comment);
-    video.commentCount = video.comments.length; // Cập nhật số lượng comment
+    video.commentCount = video.comments.length;
+
+    // Lưu video
     return video.save();
   }
+
 
   async deleteComment(_id: string, commentId: string, userId: string): Promise<Video> {
     const videoObjectId = new Types.ObjectId(_id);
@@ -125,22 +142,30 @@ export class VideosService {
   }
 
   async saveVideo(_id: string, userId: string): Promise<Video> {
-    const videoObjectId = new Types.ObjectId(_id);
-    const video = await this.videoModel.findById(videoObjectId);
-    if (!video) {
-      throw new NotFoundException('Video not found');
+    try {
+      const videoObjectId = new Types.ObjectId(_id);
+      const userObjectId = new Types.ObjectId(userId);
+
+      const video = await this.videoModel.findById(videoObjectId);
+      if (!video) {
+        throw new NotFoundException('Video not found');
+      }
+
+      const hasSaved = video.savedBy.some(id => id.toString() === userObjectId.toString());
+
+      if (hasSaved) {
+        throw new ForbiddenException('You have already saved this video');
+      }
+
+      video.savedBy.push(userObjectId);
+      video.saved += 1;
+      return video.save();
+    } catch (error) {
+      if (error instanceof Error && error.name === 'BSONError') {
+        throw new NotFoundException('Invalid ID format');
+      }
+      throw error;
     }
-
-    const userObjectId = new Types.ObjectId(userId);
-    const hasSaved = video.savedBy.some(id => id.toString() === userId);
-
-    if (hasSaved) {
-      throw new ForbiddenException('You have already saved this video');
-    }
-
-    video.savedBy.push(userObjectId);
-    video.saved += 1;
-    return video.save();
   }
 
   async unsaveVideo(_id: string, userId: string): Promise<Video> {
