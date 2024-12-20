@@ -98,12 +98,42 @@ export class UsersController {
     @Query('limit') limit: number = 10
   ) {
     return this.usersService.getPublicVideos(page, limit);
-  }  
+  }
 
-  @Public()
-  @Get('all')
-  async getAllVideos() {
-    const videos = await this.usersService.getAllVideos();
-    return { videos };
+  // sendFriendRequest
+  @Post('send-friend-request/:userId')
+  @UseGuards(JwtAuthGuard)
+  async sendFriendRequest(@Req() req, @Param('userId') userId: string) {
+    return this.usersService.sendFriendRequest(req.user._id, userId);
+  }
+
+  // friend-requests
+  @Get('friend-requests')
+  @UseGuards(JwtAuthGuard)
+  async getFriendRequests(@Req() req) {
+    return this.usersService.getFriendRequests(req.user._id);
+  }
+
+  // friends
+  @Get('friends')
+  @UseGuards(JwtAuthGuard)
+  async getFriends(@Req() req) {
+    return this.usersService.getFriends(req.user._id);
+  }
+
+  // acceptFriendRequest
+  @Post('accept-friend-request/:senderId')
+  @UseGuards(JwtAuthGuard)
+  async acceptFriendRequest(@Req() req, @Param('senderId') senderId: string) {
+    const receiverId = req.user._id;
+    return this.usersService.acceptFriendRequest(receiverId, senderId);
+  }
+
+  // rejectFriendRequest
+  @Post('reject-friend-request/:senderId')
+  @UseGuards(JwtAuthGuard)
+  async rejectFriendRequest(@Req() req, @Param('senderId') senderId: string) {
+    const receiverId = req.user._id;
+    return this.usersService.rejectFriendRequest(receiverId, senderId);
   }
 }

@@ -2,7 +2,7 @@
 // user/schemas/user.schema.ts
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import mongoose, { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
@@ -52,8 +52,14 @@ export class User {
   @Prop({ type: [{ type: String }], default: [] })
   followers: string[];
 
-  @Prop({ type: [{ type: String }], default: [] })
-  following: string[];
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] })
+  friendRequests: mongoose.Types.ObjectId[];
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] })
+  friends: mongoose.Types.ObjectId[];
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] })
+  following: mongoose.Types.ObjectId[];
 
   constructor(user: Partial<User>) {
     this._id = user._id ? user._id.toString() : undefined;

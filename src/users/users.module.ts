@@ -19,6 +19,6 @@ import { Video, VideoSchema } from '../schemas/video.schema';
   ],
   controllers: [UsersController],
   providers: [UsersService],
-  exports: [UsersService],
+  exports: [UsersService, MongooseModule],
 })
 export class UsersModule { }

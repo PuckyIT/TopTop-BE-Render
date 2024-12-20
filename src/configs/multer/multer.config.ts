@@ -16,7 +16,7 @@ export class MulterService {
           cb(null, `${Date.now()}-${file.originalname}`); // Tên file tạm thời
         },
       }),
-      limits: { fileSize: 200 * 1024 * 1024 }, // Cho phép file tối đa 200MB
+      limits: { fileSize: 500 * 1024 * 1024 }, // Cho phép file tối đa 500MB
       fileFilter: (req, file, cb) => {
         if (file.mimetype.includes('image') || file.mimetype.includes('video')) {
           cb(null, true); // Cho phép ảnh và video

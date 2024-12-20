@@ -38,6 +38,7 @@ export class CloudinaryService {
       resource_type: 'video',
       timestamp: timestamp,
       signature: signature,
+      userId: userId,
     });
   }
 

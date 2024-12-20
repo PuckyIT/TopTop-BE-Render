@@ -11,14 +11,6 @@ import { CloudinaryService } from '../configs/cloudinary/cloudinary.service';
 import { CreateVideoDto } from './dto/upload-video.dto';
 import { Video, VideoDocument } from '../schemas/video.schema';
 
-interface PopulatedVideo extends Omit<Video, 'userId'> {
-  userId: {
-    _id: Types.ObjectId;
-    username: string;
-    avatar: string;
-  };
-}
-
 @Injectable()
 export class UsersService {
   [x: string]: any;
@@ -37,7 +29,8 @@ export class UsersService {
   }
 
   async findOne(id: string): Promise<User | null> {
-    const user = await this.userModel.findById(id).exec();
+    const userId = new Types.ObjectId(id);
+    const user = await this.userModel.findById(userId).exec();
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -51,7 +44,7 @@ export class UsersService {
       avatarUrl = uploadedResponse.secure_url;
     }
 
-    return await this.userModel.findByIdAndUpdate(id, {
+    return await this.userModel.findByIdAndUpdate(new Types.ObjectId(id), {
       ...updateUserProfileDto,
       avatar: avatarUrl || updateUserProfileDto.avatar,
     });
@@ -65,15 +58,17 @@ export class UsersService {
     const uploadedResponse = await this.cloudinaryService.uploadVideo(videoFile.buffer, createVideoDto.userId);
 
     const newVideo = new this.videoModel({
+      _id: new Types.ObjectId(),
       ...createVideoDto,
-      videoUrl: uploadedResponse.secure_url,
+      videoUrl: uploadedResponse.secure_url
     });
 
     return newVideo.save();
   }
 
   async getUserVideos(userId: string) {
-    const videos = await this.videoModel.find({ userId }).sort({ createdAt: -1 }).exec();
+    const videoUserId = new Types.ObjectId(userId);
+    const videos = await this.videoModel.find({ userId: videoUserId }).sort({ createdAt: -1 }).exec();
     if (!videos) {
       throw new NotFoundException('No videos found for this user');
     }
@@ -81,9 +76,11 @@ export class UsersService {
   }
 
   async followUser(userId: string, targetUserId: string) {
+    const userIdObj = new Types.ObjectId(userId);
+    const targetUserIdObj = new Types.ObjectId(targetUserId);
     const [user, targetUser] = await Promise.all([
-      this.userModel.findById(userId),
-      this.userModel.findById(targetUserId)
+      this.userModel.findById(userIdObj),
+      this.userModel.findById(targetUserIdObj)
     ]);
 
     if (!user || !targetUser) {
@@ -91,33 +88,35 @@ export class UsersService {
     }
 
     // Check if already following
-    if (user.following.includes(targetUserId.toString())) {
+    if (user.following.includes(targetUserIdObj)) {
       throw new BadRequestException('You are already following this user');
     }
 
-    // Chuyển đổi targetUserId thành ObjectId để so sánh
-    if (userId.toString() === targetUserId.toString()) {
+    // Prevent following self
+    if (userId === targetUserId) {
       throw new BadRequestException('You cannot follow yourself');
-    } else {
-      await Promise.all([
-        this.userModel.findByIdAndUpdate(userId, {
-          $push: { following: targetUserId },
-          $inc: { followingCount: 1 }
-        }),
-        this.userModel.findByIdAndUpdate(targetUserId, {
-          $push: { followers: userId },
-          $inc: { followersCount: 1 }
-        })
-      ]);
-
-      return { message: 'Successfully followed user' };
     }
+
+    await Promise.all([
+      this.userModel.findByIdAndUpdate(userIdObj, {
+        $push: { following: targetUserIdObj },
+        $inc: { followingCount: 1 },
+      }),
+      this.userModel.findByIdAndUpdate(targetUserIdObj, {
+        $push: { followers: userIdObj },
+        $inc: { followersCount: 1 },
+      }),
+    ]);
+
+    return { message: 'Successfully followed user' };
   }
 
   async unfollowUser(userId: string, targetUserId: string) {
+    const userIdObj = new Types.ObjectId(userId);
+    const targetUserIdObj = new Types.ObjectId(targetUserId);
     const [user, targetUser] = await Promise.all([
-      this.userModel.findById(userId),
-      this.userModel.findById(targetUserId)
+      this.userModel.findById(userIdObj),
+      this.userModel.findById(targetUserIdObj)
     ]);
 
     if (!user || !targetUser) {
@@ -125,32 +124,32 @@ export class UsersService {
     }
 
     // Check if not following
-    if (!user.following.includes(targetUserId.toString())) {
+    if (!user.following.includes(targetUserIdObj)) {
       throw new BadRequestException('You are not following this user');
     }
 
-    // Chuyển đổi targetUserId thành ObjectId để so sánh
-    if (userId === targetUserId || userId === new Types.ObjectId(targetUserId).toString()) {
+    // Prevent unfollowing self
+    if (userId === targetUserId) {
       throw new BadRequestException('You cannot unfollow yourself');
-    } else {
-      // Update both users
-      await Promise.all([
-        this.userModel.findByIdAndUpdate(userId, {
-          $pull: { following: targetUserId },
-          $inc: { followingCount: -1 }
-        }),
-        this.userModel.findByIdAndUpdate(targetUserId, {
-          $pull: { followers: userId },
-          $inc: { followersCount: -1 }
-        })
-      ]);
-
-      return { message: 'Successfully unfollowed user' };
     }
+
+    await Promise.all([
+      this.userModel.findByIdAndUpdate(userIdObj, {
+        $pull: { following: targetUserIdObj },
+        $inc: { followingCount: -1 },
+      }),
+      this.userModel.findByIdAndUpdate(targetUserIdObj, {
+        $pull: { followers: userIdObj },
+        $inc: { followersCount: -1 },
+      }),
+    ]);
+
+    return { message: 'Successfully unfollowed user' };
   }
 
   async getFollowers(userId: string) {
-    const user = await this.userModel.findById(userId)
+    const userIdObj = new Types.ObjectId(userId);
+    const user = await this.userModel.findById(userIdObj)
       .populate('followers', 'username avatar bio followersCount followingCount likesCount')
       .select('username avatar followers')
       .exec();
@@ -167,7 +166,8 @@ export class UsersService {
   }
 
   async getFollowing(userId: string) {
-    const user = await this.userModel.findById(userId)
+    const userIdObj = new Types.ObjectId(userId);
+    const user = await this.userModel.findById(userIdObj)
       .populate('following', 'username avatar bio followersCount followingCount likesCount')
       .select('username avatar following')
       .exec();
@@ -207,34 +207,114 @@ export class UsersService {
     };
   }
 
-  // Lấy tất cả video
-  async getAllVideos() {
-    const videos = await this.videoModel
-      .find()
-      .populate<{ userId: { _id: Types.ObjectId; username: string; avatar: string } }>({
-        path: 'userId',
-        select: 'avatar username'
-      });
+  async sendFriendRequest(senderId: string, receiverId: string) {
+    if (senderId === receiverId) {
+      throw new BadRequestException('You cannot send a friend request to yourself');
+    }
 
-    return videos.map((video: PopulatedVideo) => ({
-      id: video._id,
-      desc: video.desc,
-      isPublic: video.isPublic,
-      createdAt: video.createdAt,
-      title: video.title,
-      views: video.views,
-      likes: video.likes,
-      videoUrl: video.videoUrl,
-      commentCount: video.commentCount,
-      saved: video.saved,
-      shared: video.shared,
-      likedBy: video.likedBy,
-      savedBy: video.savedBy,
-      user: {
-        id: video.userId._id,
-        username: video.userId.username,
-        avatar: video.userId.avatar
-      }
-    }));
+    const senderIdObj = new Types.ObjectId(senderId);
+    const receiverIdObj = new Types.ObjectId(receiverId);
+    const [sender, receiver] = await Promise.all([
+      this.userModel.findById(senderIdObj),
+      this.userModel.findById(receiverIdObj),
+    ]);
+
+    if (!sender || !receiver) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Check if already friends
+    if (receiver.friends.includes(senderIdObj)) {
+      throw new BadRequestException('You are already friends');
+    }
+
+    // Check if friend request is already sent
+    if (receiver.friendRequests.includes(senderIdObj)) {
+      throw new BadRequestException('Friend request already sent');
+    }
+
+    // Add senderId to the receiver's friendRequests
+    await this.userModel.findByIdAndUpdate(receiverIdObj, {
+      $addToSet: { friendRequests: senderIdObj },
+    });
+
+    return { message: 'Friend request sent successfully' };
+  }
+
+  async getFriendRequests(userId: string) {
+    const userIdObj = new Types.ObjectId(userId);
+    const user = await this.userModel.findById(userIdObj).populate({
+      path: 'friendRequests',
+      select: 'username email avatar',
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user.friendRequests;
+  }
+
+  async getFriends(userId: string) {
+    const userIdObj = new Types.ObjectId(userId);
+    const user = await this.userModel.findById(userIdObj).populate('friends', 'username avatar');
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user.friends;
+  }
+
+  async acceptFriendRequest(receiverId: string, senderId: string) {
+    const receiverIdObj = new Types.ObjectId(receiverId);
+    const senderIdObj = new Types.ObjectId(senderId);
+    const [receiver, sender] = await Promise.all([
+      this.userModel.findById(receiverIdObj),
+      this.userModel.findById(senderIdObj),
+    ]);
+
+    if (!receiver || !sender) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Check if the friend request exists
+    if (!receiver.friendRequests.includes(senderIdObj)) {
+      throw new BadRequestException('No pending friend request from this user');
+    }
+
+    // Update both users to include each other as friends
+    await Promise.all([
+      this.userModel.findByIdAndUpdate(receiverIdObj, {
+        $addToSet: { friends: senderIdObj },
+        $pull: { friendRequests: senderIdObj }, // Remove from pending requests
+      }),
+      this.userModel.findByIdAndUpdate(senderIdObj, {
+        $addToSet: { friends: receiverIdObj },
+      }),
+    ]);
+
+    return { message: 'Friend request accepted successfully' };
+  }
+
+
+  async rejectFriendRequest(receiverId: string, senderId: string) {
+    const receiverIdObj = new Types.ObjectId(receiverId);
+    const senderIdObj = new Types.ObjectId(senderId);
+    const receiver = await this.userModel.findById(receiverIdObj);
+
+    if (!receiver) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Check if the sender's request exists
+    if (!receiver.friendRequests.includes(senderIdObj)) {
+      throw new BadRequestException('No pending friend request from this user');
+    }
+
+    // Remove senderId from the receiver's friendRequests array
+    await this.userModel.findByIdAndUpdate(receiverIdObj, {
+      $pull: { friendRequests: senderIdObj },
+    });
+
+    return { message: 'Friend request rejected successfully' };
   }
 }

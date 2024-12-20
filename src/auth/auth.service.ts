@@ -12,7 +12,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { TokenBlacklist} from '../schemas/token-blacklist.schema';
+import { TokenBlacklist } from '../schemas/token-blacklist.schema';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +26,14 @@ export class AuthService {
 
   async create(createUserDto: { email: string, password: string | null, avatar?: { uid: string } | null, username: string }): Promise<User> {
     const { email, password, avatar, username } = createUserDto;
+    const userInitials = email
+      ? email
+        .split("@")[0]
+        .split(" ")
+        .map((word: string) => word[0])
+        .join("")
+        .toUpperCase()
+      : "U";
 
     // Kiểm tra nếu username đã tồn tại
     const existingUser = await this.userModel.findOne({ username });
@@ -33,8 +41,8 @@ export class AuthService {
       throw new ConflictException('Username đã tồn tại. Vui lòng chọn username khác.');
     }
 
-    let avatarUid = null;
-    if (avatar && avatar.uid) {  // avatar có thể là null, nên bạn không cần kiểm tra typeof avatar
+    let avatarUid = userInitials;
+    if (avatar && avatar.uid) {
       avatarUid = avatar.uid;
     }
 
@@ -47,9 +55,9 @@ export class AuthService {
 
     const createdUser = new this.userModel({
       email,
-      password: hashedPassword, // Lưu hashedPassword hoặc null
+      password: hashedPassword,
       username,
-      avatar: avatarUid,  // avatarUid sẽ là null nếu không có avatar
+      avatar: avatarUid,
     });
 
     return createdUser.save();
@@ -132,7 +140,7 @@ export class AuthService {
       const newAccessToken = this.jwtService.sign({ email: payload.email, sub: payload.sub }, { expiresIn: '1h' });
 
       return { access_token: newAccessToken };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }

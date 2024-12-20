@@ -5,11 +5,21 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Video, VideoDocument } from '../schemas/video.schema';
+import { User, UserDocument } from 'src/schemas/user.schema';
+
+// interface PopulatedVideo extends Omit<Video, 'userId'> {
+//   userId: {
+//     _id: Types.ObjectId;
+//     username: string;
+//     avatar: string;
+//   };
+// }
 
 @Injectable()
 export class VideosService {
   constructor(
     @InjectModel(Video.name) private videoModel: Model<VideoDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) { }
 
   async getVideo(_id: string): Promise<Video> {
@@ -202,5 +212,71 @@ export class VideosService {
     // This should integrate with your messaging system to send the video to the receiver
 
     return video.save();
+  }
+
+  async getAllVideos() {
+    const videos = await this.videoModel.find().populate('userId', 'username avatar');
+    return videos.map(video => ({
+      id: video._id,
+      desc: video.desc,
+      isPublic: video.isPublic,
+      createdAt: video.createdAt,
+      title: video.title,
+      views: video.views,
+      likes: video.likes,
+      videoUrl: video.videoUrl,
+      commentCount: video.commentCount,
+      saved: video.saved,
+      shared: video.shared,
+      likedBy: video.likedBy,
+      savedBy: video.savedBy,
+      sharedBy: video.sharedBy,
+      comments: video.comments,
+      userId: video.userId,
+    }));
+  }
+
+  async getFriendsVideos(userId: string) {
+    console.log(`Fetching videos for userId: ${userId}`); // Log userId
+
+    // Fetch the user and populate friends
+    console.log(`Querying user with ID: ${userId}`); // Log the query
+    const user = await this.userModel
+      .findById(userId)
+      .populate('friends', 'username avatar');
+
+    // Check if user is found
+    if (!user) {
+      console.error(`User not found for userId: ${userId}`); // Log if user is not found
+      return []; // Return empty array if user is not found
+    }
+
+    // Check if friends exist
+    if (!user.friends || user.friends.length === 0) {
+      console.log(`User has no friends`); // Log if no friends
+      return []; // Return empty array if no friends
+    }
+
+    // Fetch videos of friends
+    const friendsVideos = await this.videoModel.find({
+      userId: { $in: user.friends.map(friend => friend._id) },
+      isPublic: true,
+    }).populate('userId', 'username avatar');
+
+    return friendsVideos;
+  }
+
+  async getFollowingVideos(userId: string): Promise<Video[]> {
+    const userObjectId = new Types.ObjectId(userId);
+
+    // Fetch the user's following list
+    const user = await this.userModel.findById(userObjectId).select('following');
+    if (!user) throw new NotFoundException('User not found');
+
+    // Fetch videos of users in the following list
+    return this.videoModel
+      .find({ userId: { $in: user.following } }) // Query Video model
+      .populate('userId', 'avatar username') // Populate user details
+      .sort({ createdAt: -1 }); // Sort videos by newest first
   }
 }

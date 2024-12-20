@@ -1,8 +1,9 @@
 /* eslint-disable prettier/prettier */
 
-import { Controller, Post, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Delete, Param, Body, UseGuards, Request, Req, Get } from '@nestjs/common';
 import { VideosService } from './videos.service';
 import { JwtAuthGuard } from '../jwt/jwt-auth.guard';
+import { Public } from 'src/decorators/public.decorator';
 
 @Controller('videos')
 export class VideosController {
@@ -49,7 +50,7 @@ export class VideosController {
     // Only count as view if user watched at least 80% of video
     const viewThreshold = 0.8;
     const watchPercentage = watchDuration / totalDuration;
-    
+
     if (watchPercentage >= viewThreshold) {
       return this.videosService.incrementViews(_id);
     }
@@ -75,5 +76,26 @@ export class VideosController {
     @Request() req,
   ) {
     return this.videosService.shareVideo(_id, req.user.id);
+  }
+
+  @Get('friends')
+  @UseGuards(JwtAuthGuard)
+  async getFriendsVideos(@Req() req) {
+    const userId = req.user._id;
+    return this.videosService.getFriendsVideos(userId);
+  }
+
+  @Get('following')
+  @UseGuards(JwtAuthGuard)
+  async getFollowingVideos(@Req() req) {
+    const userId = req.user._id;
+    return this.videosService.getFollowingVideos(userId);
+  }
+
+  @Public()
+  @Get('all')
+  async getAllVideos() {
+    const videos = await this.videosService.getAllVideos();
+    return { videos };
   }
 }

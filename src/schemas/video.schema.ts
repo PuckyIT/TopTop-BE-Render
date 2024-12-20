@@ -22,9 +22,6 @@ export class Video {
   @Prop()
   desc: string;
 
-  @Prop({ required: true })
-  username: string;
-
   @Prop({ default: 0 })
   likes: number;
 
