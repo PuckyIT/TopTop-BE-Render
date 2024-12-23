@@ -71,13 +71,15 @@ export class AuthController {
 
     if (result) {
       const { access_token, user } = result;
-      // Send a JSON response instead of redirecting
-      return res.json({
+      // Send a JSON response
+      res.json({
         success: true,
         accessToken: access_token,
         email: user.email,
         avatar: user.avatar,
       });
+      // Redirect to the specified URL
+      return res.redirect('https://top-top-fe.vercel.app');
     } else {
       return res.json({ success: false });
     }
@@ -97,12 +99,15 @@ export class AuthController {
 
     if (result) {
       const { access_token, user } = result;
-      return res.json({
+      // Send a JSON response
+      res.json({
         success: true,
         accessToken: access_token,
         email: user.email,
         avatar: user.avatar,
       });
+      // Redirect to the specified URL
+      return res.redirect('https://top-top-fe.vercel.app');
     } else {
       return res.json({ success: false });
     }
