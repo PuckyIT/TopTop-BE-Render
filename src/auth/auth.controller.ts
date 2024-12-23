@@ -41,18 +41,18 @@ export class AuthController {
   async logout(@Req() req: Request, @Res() res: Response) {
     // Lấy refreshToken từ request (cookie hoặc header)
     const refreshToken = req.body.refreshToken;
-    
+
     if (refreshToken) {
       // Blacklist refreshToken
       await this.authService.blacklistToken(refreshToken); // Hủy refreshToken
     }
-  
+
     // Xóa accessToken khỏi client (cookie hoặc localStorage)
     res.clearCookie('accessToken'); // Xóa accessToken khỏi cookie
-  
+
     // Xóa refreshToken khỏi client (nếu lưu trong cookie)
     res.clearCookie('refreshToken'); // Xóa refreshToken khỏi cookie
-  
+
     // Trả về phản hồi sau khi logout
     return res.status(200).json({ message: 'Successfully logged out' });
   }
@@ -68,17 +68,21 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuthCallback(@Req() req, @Res() res) {
     const result = await this.authService.googleLogin(req);
-  
+
     if (result) {
       const { access_token, user } = result;
-      return res.redirect(`https://top-top-fe.vercel.app/callback?token=${access_token}&email=${user.email}&avatar=${user.avatar}`);
-      // return res.redirect(`http://localhost:3000/callback?token=${access_token}&email=${user.email}&avatar=${user.avatar}`);
+      // Send a JSON response instead of redirecting
+      return res.json({
+        success: true,
+        accessToken: access_token,
+        email: user.email,
+        avatar: user.avatar,
+      });
     } else {
-      return res.redirect('https://top-top-fe.vercel.app');
-      // return res.redirect('http://localhost:3000');
+      return res.json({ success: false });
     }
   }
-  
+
   @Get('github')
   @UseGuards(AuthGuard('github'))
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -90,15 +94,18 @@ export class AuthController {
   @UseGuards(AuthGuard('github'))
   async githubAuthCallback(@Req() req, @Res() res) {
     const result = await this.authService.githubLogin(req);
-  
+
     if (result) {
       const { access_token, user } = result;
-      return res.redirect(`https://top-top-fe.vercel.app/callback?token=${access_token}&email=${user.email}&avatar=${user.avatar}`);
-      // return res.redirect(`http://localhost:3000/callback?token=${access_token}&email=${user.email}&avatar=${user.avatar}`);
+      return res.json({
+        success: true,
+        accessToken: access_token,
+        email: user.email,
+        avatar: user.avatar,
+      });
     } else {
-      return res.redirect('https://top-top-fe.vercel.app');
-      // return res.redirect('http://localhost:3000');
-    } 
+      return res.json({ success: false });
+    }
   }
 
   @Post('forgot-password')
