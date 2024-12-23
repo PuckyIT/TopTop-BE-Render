@@ -12,19 +12,28 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     super({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: 'https://toptop-be.onrender.com/auth/google/callback',
-      // callbackURL: 'http://localhost:8080/auth/google/callback',
+      // callbackURL: 'https://toptop-be.onrender.com/auth/google/callback',
+      callbackURL: 'http://localhost:8080/auth/google/callback',
       scope: ['email', 'profile'],
     });
   }
 
   async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
-    try {
-      // Pass both the profile and accessToken to validateOAuthUser
-      const user = await this.authService.validateOAuthUser(profile, accessToken);
-      done(null, user); // Return user if successful
-    } catch (error) {
-      done(error, false); // Handle error in validation
+    console.log('Google Profile:', profile); // In ra để kiểm tra nội dung
+    const { emails, photos } = profile;
+
+    if (!emails || emails.length === 0) {
+      return done(new Error('Không tìm thấy email trong profile'), null);
     }
+
+    const user = {
+      email: emails[0]?.value,
+      avatar: photos[0]?.value,
+      _id: profile.id,
+      accessToken,
+      refreshToken
+    };
+
+    done(null, user);
   }
 }

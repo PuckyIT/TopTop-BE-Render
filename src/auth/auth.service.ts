@@ -192,23 +192,55 @@ export class AuthService {
     return newUser;
   }
 
+  // async googleLogin(req: any) {
+  //   if (!req.user) {
+  //     return null; // Trả về null nếu không lấy được user
+  //   }
+
+  //   const user = await this.usersService.findOneByEmail(req.user.email); // Lấy lại người dùng từ DB
+
+  //   const payload = { email: user.email, sub: user._id };
+  //   const access_token = this.jwtService.sign(payload);
+
+  //   return {
+  //     access_token,
+  //     user: {
+  //       id: user._id,
+  //       email: user.email,
+  //       name: user.name,
+  //       avatar: user.avatar, // Avatar từ cơ sở dữ liệu
+  //     },
+  //   };
+  // }
+
   async googleLogin(req: any) {
     if (!req.user) {
       return null; // Trả về null nếu không lấy được user
     }
-
-    const user = await this.usersService.findOneByEmail(req.user.email); // Lấy lại người dùng từ DB
-
+  
+    // Tìm kiếm user dựa trên email
+    let user = await this.userModel.findOne({ email: req.user.email });
+  
+    if (!user) {
+      // Sử dụng this.create thay vì this.usersService.create
+      user = await this.userModel.create({
+        email: req.user.email,
+        username: req.user.email.split('@')[0],
+        password: null, // OAuth không yêu cầu password
+        avatar: req.user.avatar,
+      });
+    }
+  
     const payload = { email: user.email, sub: user._id };
     const access_token = this.jwtService.sign(payload);
-
+  
     return {
       access_token,
       user: {
         id: user._id,
         email: user.email,
-        name: user.name,
-        avatar: user.avatar, // Avatar từ cơ sở dữ liệu
+        username: user.username,
+        avatar: user.avatar,
       },
     };
   }
@@ -228,9 +260,9 @@ export class AuthService {
     return {
       access_token,
       user: {
-        id: user._id,
+        _id: user._id,
         email: user.email,
-        name: user.name,
+        username: user.username,
         avatar: user.avatar,
       },
     };

@@ -2,6 +2,7 @@
 // user/user.service.ts
 
 import { UpdateUserDto } from '../users/dto/update-user.dto';
+import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -183,6 +184,15 @@ export class UsersService {
     };
   }
 
+  // async getFollowing(userId: string) {
+  //   if (!ObjectId.isValid(userId)) {
+  //     throw new Error('Định dạng ID người dùng không hợp lệ');
+  //   }
+
+  //   const following = await this.userModel.find({ _id: new ObjectId(userId) });
+  //   return following;
+  // }
+
   async getPublicVideos(page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
 
@@ -316,5 +326,18 @@ export class UsersService {
     });
 
     return { message: 'Friend request rejected successfully' };
+  }
+
+  async create(createUserDto: CreateUserDto): Promise<User> {
+    const createdUser = new this.userModel(createUserDto);
+    return await createdUser.save();
+  }
+
+  async findById(userId: string): Promise<User> {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
   }
 }

@@ -68,21 +68,15 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuthCallback(@Req() req, @Res() res) {
     const result = await this.authService.googleLogin(req);
-  
+
     if (result) {
       const { access_token, user } = result;
-      // Send a JSON response with the redirect URL
-      return res.json({
-        success: true,
-        accessToken: access_token,
-        email: user.email,
-        avatar: user.avatar,
-        redirectUrl: 'https://top-top-fe.vercel.app',
-      });
+      return res.redirect(`http://localhost:3000/callback?token=${access_token}&email=${user.email}&avatar=${user.avatar}`);
     } else {
-      return res.json({ success: false });
+      return res.redirect('http://localhost:3000');
     }
   }
+
   @Get('github')
   @UseGuards(AuthGuard('github'))
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -97,17 +91,9 @@ export class AuthController {
 
     if (result) {
       const { access_token, user } = result;
-      // Send a JSON response
-      res.json({
-        success: true,
-        accessToken: access_token,
-        email: user.email,
-        avatar: user.avatar,
-      });
-      // Redirect to the specified URL
-      return res.redirect('https://top-top-fe.vercel.app');
+      return res.redirect(`http://localhost:3000/callback?token=${access_token}&email=${user.email}&avatar=${user.avatar}`);
     } else {
-      return res.json({ success: false });
+      return res.redirect('http://localhost:3000');
     }
   }
 

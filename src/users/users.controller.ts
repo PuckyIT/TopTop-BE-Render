@@ -136,4 +136,11 @@ export class UsersController {
     const receiverId = req.user._id;
     return this.usersService.rejectFriendRequest(receiverId, senderId);
   }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async getMe(@Req() req) {
+    const userId = req.user._id;
+    return this.usersService.findById(userId);
+  }
 }

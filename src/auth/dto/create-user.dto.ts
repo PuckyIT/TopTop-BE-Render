@@ -15,4 +15,6 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsString()
   username: string;
+
+  avatar?: { uid: string } | null;
 }
