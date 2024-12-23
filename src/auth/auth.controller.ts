@@ -68,23 +68,21 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuthCallback(@Req() req, @Res() res) {
     const result = await this.authService.googleLogin(req);
-
+  
     if (result) {
       const { access_token, user } = result;
-      // Send a JSON response
-      res.json({
+      // Send a JSON response with the redirect URL
+      return res.json({
         success: true,
         accessToken: access_token,
         email: user.email,
         avatar: user.avatar,
+        redirectUrl: 'https://top-top-fe.vercel.app',
       });
-      // Redirect to the specified URL
-      return res.redirect('https://top-top-fe.vercel.app');
     } else {
       return res.json({ success: false });
     }
   }
-
   @Get('github')
   @UseGuards(AuthGuard('github'))
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
