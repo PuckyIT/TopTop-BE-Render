@@ -39,10 +39,15 @@ export class Video {
       _id: { type: Types.ObjectId },
       userId: { type: Types.ObjectId, ref: 'User' },
       content: String,
-      createdAt: { type: Date, default: Date.now }
+      createdAt: { type: Date, default: Date.now },
+      username: { type: String, ref: 'User' },
+      avatar: { type: String, ref: 'User' }
     }], default: []
   })
-  comments: Array<{ _id: Types.ObjectId; userId: Types.ObjectId; content: string; createdAt: Date }>;
+  comments: Array<{
+    _id: Types.ObjectId; userId: Types.ObjectId; content: string;
+    createdAt: Date; username: string; avatar: string;
+  }>;
 
   @Prop({ default: 0 })
   views: number;

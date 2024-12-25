@@ -143,4 +143,13 @@ export class UsersController {
     const userId = req.user._id;
     return this.usersService.findById(userId);
   }
+
+  @Get('chat-history')
+  @UseGuards(JwtAuthGuard)
+  async getChatHistory(
+    @Query('userId1') userId1: string,
+    @Query('userId2') userId2: string,
+  ) {
+    return this.usersService.getChatHistory(userId1, userId2);
+  }
 }

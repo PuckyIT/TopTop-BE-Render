@@ -12,6 +12,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { Reflector } from '@nestjs/core';
 import { VideosModule } from './videos/videos.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { VideosModule } from './videos/videos.module';
     AuthModule,
     VideosModule,
     CloudinaryModule,
+    ChatModule,
     MulterModule.register({
       storage: memoryStorage(),
     }),

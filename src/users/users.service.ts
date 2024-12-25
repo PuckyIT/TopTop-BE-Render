@@ -11,6 +11,7 @@ import { User, UserDocument } from '../schemas/user.schema';
 import { CloudinaryService } from '../configs/cloudinary/cloudinary.service';
 import { CreateVideoDto } from './dto/upload-video.dto';
 import { Video, VideoDocument } from '../schemas/video.schema';
+import { Chat } from 'src/schemas/chat.schema';
 
 @Injectable()
 export class UsersService {
@@ -25,11 +26,11 @@ export class UsersService {
     return `This action returns all users`;
   }
 
-  async findOneByEmail(email: string): Promise<User | null> {
+  async findOneByEmail(email: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ email }).exec();
   }
 
-  async findOne(id: string): Promise<User | null> {
+  async findOne(id: string): Promise<UserDocument | null> {
     const userId = new Types.ObjectId(id);
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
@@ -149,6 +150,10 @@ export class UsersService {
   }
 
   async getFollowers(userId: string) {
+    if (!userId || userId.length !== 24) {
+      throw new BadRequestException('Invalid user ID format.');
+    }
+
     const userIdObj = new Types.ObjectId(userId);
     const user = await this.userModel.findById(userIdObj)
       .populate('followers', 'username avatar bio followersCount followingCount likesCount')
@@ -167,6 +172,10 @@ export class UsersService {
   }
 
   async getFollowing(userId: string) {
+    if (!userId || userId.length !== 24) {
+      throw new BadRequestException('Invalid user ID format.');
+    }
+
     const userIdObj = new Types.ObjectId(userId);
     const user = await this.userModel.findById(userIdObj)
       .populate('following', 'username avatar bio followersCount followingCount likesCount')
@@ -183,15 +192,6 @@ export class UsersService {
       following: user.following
     };
   }
-
-  // async getFollowing(userId: string) {
-  //   if (!ObjectId.isValid(userId)) {
-  //     throw new Error('Định dạng ID người dùng không hợp lệ');
-  //   }
-
-  //   const following = await this.userModel.find({ _id: new ObjectId(userId) });
-  //   return following;
-  // }
 
   async getPublicVideos(page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
@@ -339,5 +339,44 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     return user;
+  }
+
+  async sendMessage(senderId: string, receiverId: string, content: string, type: 'text' | 'video' | 'image'): Promise<Chat> {
+    if (!Types.ObjectId.isValid(senderId) || !Types.ObjectId.isValid(receiverId)) {
+      throw new NotFoundException('Invalid user ID format');
+    }
+
+    const senderObjectId = new Types.ObjectId(senderId);
+    const receiverObjectId = new Types.ObjectId(receiverId);
+
+    const message = await this.chatModel.create({
+      sender: senderObjectId,
+      receiver: receiverObjectId,
+      content,
+      type,
+    });
+
+    return message;
+  }
+
+  async getChatHistory(userId1: string, userId2: string): Promise<Chat[]> {
+    if (!Types.ObjectId.isValid(userId1) || !Types.ObjectId.isValid(userId2)) {
+      throw new NotFoundException('Invalid user ID format');
+    }
+
+    const user1ObjectId = new Types.ObjectId(userId1);
+    const user2ObjectId = new Types.ObjectId(userId2);
+
+    const chatHistory = await this.chatModel
+      .find({
+        $or: [
+          { sender: user1ObjectId, receiver: user2ObjectId },
+          { sender: user2ObjectId, receiver: user1ObjectId },
+        ],
+      })
+      .sort({ createdAt: 1 })
+      .exec();
+
+    return chatHistory;
   }
 }

@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 
-import { Controller, Post, Delete, Param, Body, UseGuards, Request, Req, Get } from '@nestjs/common';
+import { Controller, Post, Delete, Param, Body, UseGuards, Request, Req, Get, Put } from '@nestjs/common';
 import { VideosService } from './videos.service';
 import { JwtAuthGuard } from '../jwt/jwt-auth.guard';
 import { Public } from 'src/decorators/public.decorator';
@@ -39,6 +39,23 @@ export class VideosController {
     @Request() req,
   ) {
     return this.videosService.deleteComment(_id, commentId, req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put(':id/comment/:commentId')
+  async updateComment(
+    @Param('id') _id: string,
+    @Param('commentId') commentId: string,
+    @Body('content') content: string,
+    @Request() req,
+  ) {
+    return this.videosService.updateComment(_id, commentId, content, req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/comments')  
+  async getComments(@Param('id') _id: string) {
+    return this.videosService.getComments(_id);
   }
 
   @Post(':id/view')

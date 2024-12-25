@@ -15,6 +15,15 @@ import { User, UserDocument } from 'src/schemas/user.schema';
 //   };
 // }
 
+type filteredComments = {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  content: string;
+  createdAt: Date;
+  username: string;
+  avatar: string;
+};
+
 @Injectable()
 export class VideosService {
   constructor(
@@ -82,62 +91,169 @@ export class VideosService {
     return video;
   }
 
-  async addComment(_id: string, userId: string, content: string): Promise<Video> {
-    // Kiểm tra và chuyển đổi _id sang ObjectId
+  async addComment(_id: string, userId: string, content: string): Promise<{ comments: filteredComments[] }> {
+    // Check and convert _id to ObjectId
     if (!Types.ObjectId.isValid(_id)) {
       throw new NotFoundException('Invalid video ID format');
     }
     const videoObjectId = new Types.ObjectId(_id);
 
-    // Kiểm tra video có tồn tại không
+    // Check if the video exists
     const video = await this.videoModel.findById(videoObjectId);
     if (!video) {
       throw new NotFoundException('Video not found');
     }
 
-    // Kiểm tra và chuyển đổi userId sang ObjectId
+    // Check and convert userId to ObjectId
     if (!Types.ObjectId.isValid(userId)) {
       throw new NotFoundException('Invalid user ID format');
     }
     const userObjectId = new Types.ObjectId(userId);
 
-    // Tạo comment
+    // Fetch user details (username and avatar) in one query
+    const user = await this.userModel.findById(userObjectId).select('username avatar');
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Create comment
     const comment = {
-      _id: new Types.ObjectId(), // Tạo ObjectId mới cho comment
+      _id: new Types.ObjectId(),
       videoId: videoObjectId,
-      userId: userObjectId, // Gán ObjectId cho userId
+      userId: userObjectId,
       content,
+      username: user.username,
+      avatar: user.avatar,
       createdAt: new Date(),
     };
 
-    // Thêm comment vào video
+    // Add comment to video
     video.comments.push(comment);
     video.commentCount = video.comments.length;
 
-    // Lưu video
-    return video.save();
+    // Save video
+    await video.save();
+
+    // Map comments to desired format
+    const filteredComments = video.comments.map(comment => ({
+      _id: comment._id,
+      userId: comment.userId,
+      content: comment.content,
+      createdAt: comment.createdAt,
+      username: comment.username,
+      avatar: comment.avatar,
+    }));
+
+    return { comments: filteredComments };
   }
 
-
-  async deleteComment(_id: string, commentId: string, userId: string): Promise<Video> {
+  async deleteComment(_id: string, commentId: string, userId: string): Promise<{ comments: filteredComments[] }> {
+    // Convert video ID to ObjectId
     const videoObjectId = new Types.ObjectId(_id);
     const video = await this.videoModel.findById(videoObjectId);
     if (!video) {
       throw new NotFoundException('Video not found');
     }
 
-    const comment = video.comments.find(c => c._id.toString() === commentId);
+    // Find the comment to be deleted
+    const comment = video.comments.find((c) => c._id.toString() === commentId);
     if (!comment) {
       throw new NotFoundException('Comment not found');
     }
 
+    // Check if the user owns the comment
     if (comment.userId.toString() !== userId) {
       throw new ForbiddenException('You can only delete your own comments');
     }
 
-    video.comments = video.comments.filter(c => c._id.toString() !== commentId);
-    video.commentCount = video.comments.length; // Cập nhật số lượng comment
-    return video.save();
+    // Remove the comment
+    video.comments = video.comments.filter((c) => c._id.toString() !== commentId);
+    video.commentCount = video.comments.length;
+
+    // Save the updated video document
+    await video.save();
+
+    // Map the comments to include desired fields
+    const filteredComments = video.comments.map((comment) => ({
+      _id: comment._id,
+      userId: comment.userId,
+      content: comment.content,
+      createdAt: comment.createdAt,
+      username: comment.username,
+      avatar: comment.avatar,
+    }));
+
+    // Return the updated comments
+    return { comments: filteredComments };
+  }
+
+  async updateComment(_id: string, commentId: string, content: string, userId: string): Promise<{ comments: filteredComments[] }> {
+    // Convert video ID to ObjectId
+    const videoObjectId = new Types.ObjectId(_id);
+    const video = await this.videoModel.findById(videoObjectId);
+    if (!video) {
+      throw new NotFoundException('Video not found');
+    }
+
+    // Find the specific comment
+    const comment = video.comments.find((c) => c._id.toString() === commentId);
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    // Check if the user owns the comment
+    if (comment.userId.toString() !== userId) {
+      throw new ForbiddenException('You can only update your own comments');
+    }
+
+    // Update the comment content
+    comment.content = content;
+
+    // Save the updated video document
+    await video.save();
+
+    // Map the comments to include desired fields
+    const filteredComments = video.comments.map((comment) => ({
+      _id: comment._id,
+      userId: comment.userId,
+      content: comment.content,
+      createdAt: comment.createdAt,
+      username: comment.username,
+      avatar: comment.avatar,
+    }));
+
+    // Return the updated comments
+    return { comments: filteredComments };
+  }
+
+  async getComments(_id: string): Promise<{ comments: filteredComments[] }> {
+    const videoObjectId = new Types.ObjectId(_id);
+    const video = await this.videoModel.findById(videoObjectId);
+
+    if (!video) {
+      throw new NotFoundException('Video not found');
+    }
+
+    // Map comments to only include the desired properties
+    const filteredComments = video.comments.map(comment => ({
+      _id: comment._id,
+      userId: comment.userId,
+      content: comment.content,
+      createdAt: comment.createdAt,
+      username: comment.username,
+      avatar: comment.avatar,
+    }));
+
+    return { comments: filteredComments };
+  }
+
+  async deleteVideo(_id: string): Promise<Video> {
+    const videoObjectId = new Types.ObjectId(_id);
+    const video = await this.videoModel.findByIdAndDelete(videoObjectId);
+    if (!video) {
+      throw new NotFoundException('Video not found');
+    }
+    return video;
   }
 
   async incrementViews(_id: string): Promise<Video> {
