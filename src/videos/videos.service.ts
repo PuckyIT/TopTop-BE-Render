@@ -331,26 +331,10 @@ export class VideosService {
   }
 
   async getAllVideos() {
-    const videos = await this.videoModel.find().populate('userId', 'username avatar');
-    return videos.map(video => ({
-      id: video._id,
-      desc: video.desc,
-      isPublic: video.isPublic,
-      createdAt: video.createdAt,
-      title: video.title,
-      views: video.views,
-      likes: video.likes,
-      videoUrl: video.videoUrl,
-      commentCount: video.commentCount,
-      saved: video.saved,
-      shared: video.shared,
-      likedBy: video.likedBy,
-      savedBy: video.savedBy,
-      sharedBy: video.sharedBy,
-      comments: video.comments,
-      userId: video.userId,
-    }));
+    const videos = await this.videoModel.find().populate('userId', 'avatar username');
+    return videos;
   }
+
 
   async getFriendsVideos(userId: string) {
     console.log(`Fetching videos for userId: ${userId}`); // Log userId
@@ -394,5 +378,14 @@ export class VideosService {
       .find({ userId: { $in: user.following } }) // Query Video model
       .populate('userId', 'avatar username') // Populate user details
       .sort({ createdAt: -1 }); // Sort videos by newest first
+  }
+
+  async getVideoByUserId(userId: string): Promise<Video> {
+    const userObjectId = new Types.ObjectId(userId);
+    const video = await this.videoModel.findById(userObjectId);
+    if (!video) {
+      throw new NotFoundException('Video not found');
+    }
+    return video;
   }
 }

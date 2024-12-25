@@ -11,14 +11,14 @@ import { User, UserDocument } from '../schemas/user.schema';
 import { CloudinaryService } from '../configs/cloudinary/cloudinary.service';
 import { CreateVideoDto } from './dto/upload-video.dto';
 import { Video, VideoDocument } from '../schemas/video.schema';
-import { Chat } from 'src/schemas/chat.schema';
+import { Chat, ChatDocument } from 'src/schemas/chat.schema';
 
 @Injectable()
 export class UsersService {
-  [x: string]: any;
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Video.name) private videoModel: Model<VideoDocument>,
+    @InjectModel(Chat.name) private chatModel: Model<ChatDocument>,
     private readonly cloudinaryService: CloudinaryService,
   ) { }
 
@@ -28,6 +28,10 @@ export class UsersService {
 
   async findOneByEmail(email: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ email }).exec();
+  }
+
+  async findOneByUsername(username: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ username }).exec();
   }
 
   async findOne(id: string): Promise<UserDocument | null> {
@@ -57,14 +61,18 @@ export class UsersService {
       throw new BadRequestException('Invalid video file');
     }
 
-    const uploadedResponse = await this.cloudinaryService.uploadVideo(videoFile.buffer, createVideoDto.userId);
+    // Upload video lên Cloudinary
+    const uploadedResponse = await this.cloudinaryService.uploadVideo(videoFile.buffer, createVideoDto.userId.toString());
 
+    // Tạo video mới với userId là _id của người dùng
     const newVideo = new this.videoModel({
       _id: new Types.ObjectId(),
       ...createVideoDto,
-      videoUrl: uploadedResponse.secure_url
+      userId: new Types.ObjectId(createVideoDto.userId),
+      videoUrl: uploadedResponse.secure_url,
     });
 
+    // Lưu video vào MongoDB
     return newVideo.save();
   }
 
@@ -378,5 +386,14 @@ export class UsersService {
       .exec();
 
     return chatHistory;
+  }
+
+  async searchUsers(query: string): Promise<User[]> {
+    return this.userModel
+      .find({
+        username: { $regex: query, $options: "i" },
+      })
+      .select("id username avatar")
+      .lean();
   }
 }

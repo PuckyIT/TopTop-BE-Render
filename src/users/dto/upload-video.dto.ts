@@ -1,10 +1,10 @@
 /* eslint-disable prettier/prettier */
 import { IsNotEmpty, IsString } from 'class-validator';
+import { Types } from 'mongoose';
 
 export class CreateVideoDto {
   @IsNotEmpty()
-  @IsString()
-  userId: string;
+  userId: Types.ObjectId;
 
   @IsNotEmpty()
   @IsString()

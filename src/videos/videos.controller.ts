@@ -53,7 +53,7 @@ export class VideosController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(':id/comments')  
+  @Get(':id/comments')
   async getComments(@Param('id') _id: string) {
     return this.videosService.getComments(_id);
   }
@@ -113,6 +113,13 @@ export class VideosController {
   @Get('all')
   async getAllVideos() {
     const videos = await this.videosService.getAllVideos();
-    return { videos };
+    return videos;
+  }
+
+  @Public()
+  @Get(':id')
+  async getVideo(@Param('id') userId: string) {
+    const video = await this.videosService.getVideoByUserId(userId);
+    return { video };
   }
 }

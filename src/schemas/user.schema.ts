@@ -2,13 +2,14 @@
 // user/schemas/user.schema.ts
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { Document } from 'mongoose';
+import mongoose, { Document, Types } from 'mongoose';
 
 export type UserDocument = User & Document;
 
 @Schema({ timestamps: true })
 export class User {
-  [x: string]: any;
+  @Prop({ type: Types.ObjectId })
+  _id: Types.ObjectId;
 
   @Prop({ required: true, unique: true })
   email: string;
@@ -62,7 +63,7 @@ export class User {
   following: mongoose.Types.ObjectId[];
 
   constructor(user: Partial<User>) {
-    this._id = user._id ? user._id.toString() : undefined;
+    this._id = user._id;
     this.email = user.email;
     this.password = user.password;
     this.role = user.role || 'user';

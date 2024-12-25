@@ -16,6 +16,6 @@ export const TokenBlacklistSchema = new Schema(
 
 export interface TokenBlacklist extends Document {
     token: string;
-    userId: string;
+    userId: Schema.Types.ObjectId;
     createdAt: Date;
 }

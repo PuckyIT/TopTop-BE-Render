@@ -9,6 +9,7 @@ import { MulterModule } from '../configs/multer/multer.module';
 import { CloudinaryModule } from '../configs/cloudinary/cloudinary.module';
 import { User, UserSchema } from '../schemas/user.schema';
 import { Video, VideoSchema } from '../schemas/video.schema';
+import { Chat, ChatSchema } from 'src/schemas/chat.schema';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { Video, VideoSchema } from '../schemas/video.schema';
     CloudinaryModule,
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     MongooseModule.forFeature([{ name: Video.name, schema: VideoSchema }]),
+    MongooseModule.forFeature([{ name: Chat.name, schema: ChatSchema }])
   ],
   controllers: [UsersController],
   providers: [UsersService],
